@@ -238,8 +238,12 @@ ENGINES = {
     # --tailscale: the tailnet is the access control. Browse to
     # http://<hostname>:8000 for the UI.
     "comfyui-flux": {
+        # torch >=2.8 required: ComfyUI's comfy_kitchen registers custom
+        # ops with PEP 585 annotations (list[int]) that older torch
+        # infer_schema rejects -- 2.5.1 crash-looped (flight-recorder
+        # verified 2026-08-27)
         "image": os.environ.get("COMFY_IMAGE",
-                                "pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime"),
+                                "pytorch/pytorch:2.9.1-cuda12.8-cudnn9-runtime"),
         "model": os.environ.get(
             "MODEL_ID", "Comfy-Org/flux1-schnell:flux1-schnell-fp8.safetensors"),
         "max_ctx": None,

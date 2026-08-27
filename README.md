@@ -96,6 +96,17 @@ Things the Akash docs won't tell you, learned the hard way:
 - **Ephemeral tailscale nodes squat their hostnames** for a while after death. A crash-looping container piles up `name-1, name-2, ...` — eight of them, in our case, at four-minute intervals, re-downloading 32GB each lap. Fresh hostname per deploy; watch for suffix pileups as a crash-loop signal.
 - **Escrow is spent by open deployments, not by success.** Every failure path in shoestring closes the deployment; if you kill the script mid-deploy, `./shoestring.py close <dseq>` yourself.
 
+## The reliability canary
+
+`canary.py` is the measurement engine behind the provider data: each run places a **real, paid GPU lease** with the cheapest bid (or, with `--explore-p`, a random non-cheapest bid so the whole market gets sampled), checks whether the workload actually becomes reachable, records the result, and closes the lease. A few cents per run; 6 runs/day builds a useful picture within weeks.
+
+```bash
+export AKASH_API_KEY=...
+./canary.py run                 # one lease -> one row in data/canary.csv
+```
+
+**No database required.** Rows append to a local CSV (same format as the published pilot in [`data/`](data/), plus `dseq` and sampling-`mode` columns the pilot lacked — every new row is verifiable against the chain). Optionally set `SUPABASE_URL`/`SUPABASE_KEY` (any PostgREST endpoint) to *also* mirror rows to a shared table; the schema is in the script's docstring. The database is strictly supplemental — the CSV is the source of truth.
+
 ## Cost expectations
 
 From live bids on our deploys (your market will vary):
