@@ -232,6 +232,31 @@ ENGINES = {
         "storage": "60Gi",
         "args": _VLLM_ARGS,
     },
+    # comfyui-flux: image generation (prototype). ComfyUI + FLUX.1-schnell
+    # fp8 single-file checkpoint (Apache 2.0 -- safe for commercial use).
+    # ComfyUI has NO authentication of its own, so this engine REQUIRES
+    # --tailscale: the tailnet is the access control. Browse to
+    # http://<hostname>:8000 for the UI.
+    "comfyui-flux": {
+        "image": os.environ.get("COMFY_IMAGE",
+                                "pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime"),
+        "model": os.environ.get(
+            "MODEL_ID", "Comfy-Org/flux1-schnell:flux1-schnell-fp8.safetensors"),
+        "max_ctx": None,
+        "gpus": ["a100", "h100", "h200", "pro6000se"],
+        "storage": "60Gi",
+        "health": "/",          # ComfyUI web root; no /v1/models here
+        "tailscale_only": True,
+        "args": (
+            "nvidia-smi --query-gpu=name,memory.total --format=csv; "
+            "apt-get update && apt-get install -y git wget curl ca-certificates; "
+            "git clone --depth 1 https://github.com/comfyanonymous/ComfyUI /opt/ComfyUI; "
+            "cd /opt/ComfyUI && pip install --no-cache-dir -r requirements.txt; "
+            "wget -q --show-progress -O models/checkpoints/flux1-schnell-fp8.safetensors "
+            "https://huggingface.co/Comfy-Org/flux1-schnell/resolve/main/flux1-schnell-fp8.safetensors; "
+            "python main.py --listen 0.0.0.0 --port 8000"
+        ),
+    },
 }
 
 SDL_TEMPLATE = """---
@@ -336,6 +361,9 @@ def deploy(args):
         # explicit --max-ctx pins the context; otherwise the container
         # self-sizes from the winning card's VRAM
         extra_env += f"\n      - CTX_FORCE={args.max_ctx}"
+    if eng.get("tailscale_only") and not args.tailscale:
+        sys.exit(f"--engine {args.engine} serves an unauthenticated UI and "
+                 "REQUIRES --tailscale; refusing to expose it publicly.")
     if args.tailscale:
         ts_key = os.environ.get("TS_AUTHKEY")
         if not ts_key:
@@ -343,7 +371,8 @@ def deploy(args):
                      "from https://login.tailscale.com/admin/settings/keys).")
         # model server binds to loopback; only tailscaled can reach it
         run_args = (TAILSCALE_BOOTSTRAP.format(ts_hostname=args.ts_hostname)
-                    + run_args.replace("--host 0.0.0.0", "--host 127.0.0.1"))
+                    + run_args.replace("--host 0.0.0.0", "--host 127.0.0.1")
+                              .replace("--listen 0.0.0.0", "--listen 127.0.0.1"))
         extra_env += f"\n      - TS_AUTHKEY={ts_key}"
 
     sdl = SDL_TEMPLATE.format(
@@ -411,12 +440,13 @@ def deploy(args):
     print("Waiting for the server (image pull + model download; "
           "typically 5-20 min)...")
 
+    health_path = eng.get("health", "/v1/models")
     deadline = time.time() + 30 * 60
     ready = False
     while time.time() < deadline:
         try:
             r = requests.get(
-                f"{endpoint}/v1/models",
+                f"{endpoint}{health_path}",
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=10,
             )
@@ -437,6 +467,13 @@ def deploy(args):
     usd_hr = p * BLOCKS_PER_HOUR / 1e6
     print(f"\nREADY  dseq={dseq}  provider={provider}  "
           f"cost: ${usd_hr:.2f}/hr (~${usd_hr * 730:.0f}/mo)\n")
+    if eng.get("health") == "/":
+        # web-UI engine (e.g. comfyui-flux): no API configs to print
+        print(f"""Open the UI in a browser on your tailnet:  {endpoint}
+
+--- teardown (billing stops only when closed!) -----------------------------
+./shoestring.py close {dseq}""")
+        return
     print(f"""--- smoke test -------------------------------------------------------------
 curl {endpoint}/v1/chat/completions \\
   -H "Authorization: Bearer $LLM_API_KEY" -H "Content-Type: application/json" \\
