@@ -1,0 +1,120 @@
+# shoestring
+
+**Boot an LLM on the cheapest GPU on Akash. On a shoestring.**
+
+One command rents the cheapest suitable GPU on the [Akash](https://akash.network) marketplace, downloads a model, and serves it behind an OpenAI-compatible endpoint — optionally reachable **only over your Tailscale tailnet**, end-to-end encrypted, invisible to the public internet. One command tears it down.
+
+Measured, not promised (Qwen 3.8 27B, Q4, August 2026):
+
+|                        |                                   |
+| ---------------------- | --------------------------------- |
+| Cost                   | **\$0.16/hour** (~\$3.80/day)       |
+| Cold start → serving   | **~6 minutes**                    |
+| Generation             | ~27 tok/s (24GB card), ~79 tok/s with MTP (a100) |
+| Context                | 64k on a \$0.16/hr card; 262k on bigger cards |
+| Teardown               | one command, billing stops        |
+
+That's cheap enough to treat a 27B coding model as disposable: spin one up for an afternoon of [opencode](https://opencode.ai) or Claude Code, kill it at dinner, spend less than a coffee.
+
+## Quickstart
+
+```bash
+# 1. An Akash Console API key (console.akash.network -> API keys)
+#    and a funded account (USD card payments work; ~\$10 escrow per deploy).
+export AKASH_API_KEY=...
+
+# 2. A key to gate your endpoint
+export LLM_API_KEY=$(openssl rand -hex 16)
+
+# 3. Deploy (public endpoint, bearer-key gated)
+uv run shoestring.py deploy            # or: pip install requests && ./shoestring.py deploy
+
+# ... ~6 minutes later it prints the endpoint, a smoke-test curl,
+#     and ready-to-paste opencode / Claude Code configs.
+
+# 4. When you're done — billing stops ONLY when you close:
+./shoestring.py close <dseq>
+```
+
+### Tailnet-only mode (recommended)
+
+The default mode exposes the endpoint on the provider's public ingress over plain HTTP — your API key and your prompts travel in cleartext. For anything beyond a smoke test, use `--tailscale`:
+
+```bash
+# Auth key from https://login.tailscale.com/admin/settings/keys
+# Settings: Ephemeral ON, Pre-approved ON (or use a tag), Reusable your call.
+export TS_AUTHKEY=tskey-auth-...
+
+./shoestring.py deploy --tailscale --ts-hostname mybox-1
+```
+
+The container joins your tailnet as an ephemeral node, the model server binds to loopback, and `tailscale serve` publishes it at `http://mybox-1:8000` — WireGuard-encrypted, reachable only from your devices. The public ingress URI still exists (Akash requires one global service) but connects to nothing. The node removes itself when the lease closes.
+
+**Use a fresh `--ts-hostname` on every deploy.** A dead ephemeral node squatting on the name forces the new node to register as `name-1`, and the readiness poll will miss it.
+
+**Threat model note:** the winning provider can read the container env, which includes `TS_AUTHKEY` and `LLM_API_KEY`. Use ephemeral, pre-approved, ideally tagged keys, and consider an ACL that prevents the tagged node from initiating connections to the rest of your tailnet:
+
+```jsonc
+"tagOwners": { "tag:shoestring": ["autogroup:admin"] },
+"acls": [
+  { "action": "accept", "src": ["autogroup:member"], "dst": ["tag:shoestring:8000"] }
+]
+```
+
+## Engines
+
+| engine | serving stack | endpoint protocols | min card | status |
+| --- | --- | --- | --- | --- |
+| `llamacpp` *(default)* | llama.cpp + GGUF Q4_K_M | OpenAI | 24GB (\$0.16/hr!) | battle-tested |
+| `vllm` | vLLM + AWQ-INT4 | OpenAI **and Anthropic** | 32GB (Ampere+) | SDL-validated, serving untested |
+| `vllm-fp8` | vLLM + first-party FP8 | OpenAI **and Anthropic** | 40GB | SDL-validated, serving untested |
+| `vllm-nvfp4` | vLLM + NVFP4 | OpenAI **and Anthropic** | Blackwell/Hopper | SDL-validated, serving untested |
+
+The vLLM engines matter because vLLM natively serves the **Anthropic `/v1/messages` protocol** alongside OpenAI's — Claude Code connects directly via `ANTHROPIC_BASE_URL`, no proxy. The llamacpp engine is OpenAI-only; the deploy output prints a one-command LiteLLM bridge for Claude Code.
+
+Default model is **Qwen 3.8 27B** (Apache 2.0, 262k context, hybrid attention/mamba, multimodal — the ggml-org GGUF ships the vision projector). Swap via `MODEL_ID`; the engine recipes are Qwen-tuned but the machinery is model-agnostic.
+
+### llamacpp knobs
+
+- **Context self-sizes to the winning card.** The SDL is locked before bids arrive, so the container reads its own VRAM at boot: 24GB→32k, 32GB→64k, 40GB→131k, 70GB+→262k. Pin explicitly with `--max-ctx N` (the boot log prints `llama ctx-size: N` either way). The tiers assume q8 KV; the hybrid-mamba architecture makes KV ~4-8x cheaper than a pure transformer, which is why 64k fits on a 24GB card at all.
+- **`KV_F16=1`** — full-precision KV cache instead of q8_0 (halves max context, zero quant loss). Measured on the 24GB Quadro: 64k f16 fits (`--max-ctx 65536`).
+- **`NO_MTP=1`** — drop the multi-token-prediction draft. The MTP speculative decoding (per [Simon Willison's writeup](https://simonwillison.net/2026/Aug/16/qwen-38-27b/)) gave us **79 tok/s vs 30** — but the draft is a second 15.5GB GGUF that must be resident, so it's a ≥40GB-card luxury. On a 24GB card it crash-loops; set `NO_MTP=1`.
+- **Reasoning defaults to `low`** server-side (`--chat-template-kwargs`). The model's default `xhigh` reasoning famously over-thinks — we watched it spend 138 tokens deciding to say "I'm Qwen." Override per request with `reasoning_effort`.
+
+## Provider selection
+
+Cheapest bid wins, minus an optional blacklist — **empty by default** (a community tool shouldn't ship named provider addresses; populate `BLACKLIST=addr1,addr2` from your own experience). Our month of automated canary deployments (raw pilot data in [`data/`](data/), 176 real leases, sampling mode caveats apply) suggests paying more buys nothing on Akash: in our sample, sub-\$0.10/hr bids were ~98% reachable while one provider bidding 6x market went 0-for-8. A criteria-based filter ("avoid providers below X% measured reachability over N days") is planned.
+
+## Field notes (paid for in failed deployments)
+
+Things the Akash docs won't tell you, learned the hard way:
+
+- **The manifest gotcha.** The Console API canonicalizes your SDL into a JSON manifest at deployment creation. Submit *that* manifest at lease time — re-rendering your own YAML produces leases that go active, bill, and never schedule the workload.
+- **"Zero global services" is illegal.** Akash rejects manifests where nothing is exposed globally. Tailnet-only mode still declares a global expose; the server just doesn't listen on it.
+- **`uact` is micro-USD, not micro-AKT.** Bid prices are per block (~6.1s). `price × 590 / 1e6 ≈ $/hour`. We confirmed against console billing; converting via the AKT exchange rate silently understates cost ~2x.
+- **On-chain GPU attributes lie by omission.** `model: rtx6000` doesn't distinguish the 24GB Quadro from the 48GB Ada, and most providers don't advertise a `ram` attribute. We found out via CUDA OOM. The first log line of every shoestring deploy is now `nvidia-smi` naming the actual card.
+- **Ephemeral tailscale nodes squat their hostnames** for a while after death. A crash-looping container piles up `name-1, name-2, ...` — eight of them, in our case, at four-minute intervals, re-downloading 32GB each lap. Fresh hostname per deploy; watch for suffix pileups as a crash-loop signal.
+- **Escrow is spent by open deployments, not by success.** Every failure path in shoestring closes the deployment; if you kill the script mid-deploy, `./shoestring.py close <dseq>` yourself.
+
+## Cost expectations
+
+From live bids on our deploys (your market will vary):
+
+| card | $/hr | notes |
+| --- | --- | --- |
+| Quadro RTX 6000 24GB | **\$0.16** | the shoestring special; 27B Q4 at 27-30 tok/s, 64k ctx |
+| a100 | \$1.84 | 79 tok/s with MTP; 131k-262k ctx |
+| pro6000se (Blackwell 96GB) | \$2.04 | |
+| h100 | \$2.55 | |
+
+Deposit is \$10 by default (escrow, drawn hourly, refundable on close). A failed experiment costs pennies.
+
+## What this is not
+
+- Not a production serving story: single container, no replicas, no autoscaling, provider can vanish (they hold your lease honest only via escrow).
+- Not private from the provider: they run the hardware. Tailnet mode protects the *network path*, not the GPU's memory. Don't send secrets you wouldn't send to a random datacenter.
+- Not affiliated with Akash, Qwen, Tailscale, or anyone else.
+
+## License
+
+MIT
