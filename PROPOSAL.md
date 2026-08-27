@@ -1,4 +1,4 @@
-# Community Pool Proposal: shoestring — one-command LLM inference on Akash
+# Community Pool Proposal: shoestring — GPUs on a budget, with one command
 
 <p align="center"><img width="600" height="600" alt="shoestring — a boot, its lace rising into a glowing chip" src="https://github.com/user-attachments/assets/4d7b9d22-9756-4b81-a8b1-76006c3acfa9" /></p>
 
