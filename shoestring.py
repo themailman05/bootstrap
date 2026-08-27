@@ -247,14 +247,21 @@ ENGINES = {
         "storage": "60Gi",
         "health": "/",          # ComfyUI web root; no /v1/models here
         "tailscale_only": True,
+        # Flight recorder: the whole workload runs through tee; if it ever
+        # exits, the container serves the boot log on the same port instead
+        # of dying -- a crash-looping lease debugs itself over the tailnet
+        # (curl http://<host>:8000/boot.log) instead of restarting blind.
         "args": (
-            "nvidia-smi --query-gpu=name,memory.total --format=csv; "
-            "apt-get update && apt-get install -y git wget curl ca-certificates; "
-            "git clone --depth 1 https://github.com/comfyanonymous/ComfyUI /opt/ComfyUI; "
-            "cd /opt/ComfyUI && pip install --no-cache-dir -r requirements.txt; "
-            "wget -q --show-progress -O models/checkpoints/flux1-schnell-fp8.safetensors "
-            "https://huggingface.co/Comfy-Org/flux1-schnell/resolve/main/flux1-schnell-fp8.safetensors; "
-            "python main.py --listen 0.0.0.0 --port 8000"
+            "( nvidia-smi --query-gpu=name,memory.total --format=csv; "
+            "apt-get update && apt-get install -y git wget curl ca-certificates && "
+            "git clone --depth 1 https://github.com/comfyanonymous/ComfyUI /opt/ComfyUI && "
+            "cd /opt/ComfyUI && pip install --no-cache-dir -r requirements.txt && "
+            "wget -nv -O models/checkpoints/flux1-schnell-fp8.safetensors "
+            "https://huggingface.co/Comfy-Org/flux1-schnell/resolve/main/flux1-schnell-fp8.safetensors && "
+            "python main.py --listen 0.0.0.0 --port 8000 "
+            ") 2>&1 | tee /tmp/boot.log; "
+            "echo '=== WORKLOAD EXITED; serving boot.log ==='; "
+            "cd /tmp && python -m http.server 8000 --bind 127.0.0.1"
         ),
     },
 }
