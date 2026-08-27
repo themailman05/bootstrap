@@ -10,9 +10,9 @@ Measured, not promised (Qwen 3.8 27B, Q4, August 2026):
 
 |                        |                                   |
 | ---------------------- | --------------------------------- |
-| Cost                   | **\$0.16/hour** (~\$3.80/day)       |
-| Cold start → serving   | **~6 minutes**                    |
-| Generation             | ~27 tok/s (24GB card), ~79 tok/s with MTP (a100) |
+| Cost                   | **\$0.16/hour** (\~\$3.80/day)       |
+| Cold start → serving   | **\~6 minutes**                    |
+| Generation             | \~27 tok/s (24GB card), \~79 tok/s with MTP (a100) |
 | Context                | 64k on a \$0.16/hr card; 262k on bigger cards |
 | Teardown               | one command, billing stops        |
 
@@ -22,7 +22,7 @@ That's cheap enough to treat a 27B coding model as disposable: spin one up for a
 
 ```bash
 # 1. An Akash Console API key (console.akash.network -> API keys)
-#    and a funded account (USD card payments work; ~\$10 escrow per deploy).
+#    and a funded account (USD card payments work; \~\$10 escrow per deploy).
 export AKASH_API_KEY=...
 
 # 2. A key to gate your endpoint
@@ -31,7 +31,7 @@ export LLM_API_KEY=$(openssl rand -hex 16)
 # 3. Deploy (public endpoint, bearer-key gated)
 uv run shoestring.py deploy            # or: pip install requests && ./shoestring.py deploy
 
-# ... ~6 minutes later it prints the endpoint, a smoke-test curl,
+# ... \~6 minutes later it prints the endpoint, a smoke-test curl,
 #     and ready-to-paste opencode / Claude Code configs.
 
 # 4. When you're done — billing stops ONLY when you close:
@@ -78,14 +78,14 @@ Default model is **Qwen 3.8 27B** (Apache 2.0, 262k context, hybrid attention/ma
 
 ### llamacpp knobs
 
-- **Context self-sizes to the winning card.** The SDL is locked before bids arrive, so the container reads its own VRAM at boot: 24GB→32k, 32GB→64k, 40GB→131k, 70GB+→262k. Pin explicitly with `--max-ctx N` (the boot log prints `llama ctx-size: N` either way). The tiers assume q8 KV; the hybrid-mamba architecture makes KV ~4-8x cheaper than a pure transformer, which is why 64k fits on a 24GB card at all.
+- **Context self-sizes to the winning card.** The SDL is locked before bids arrive, so the container reads its own VRAM at boot: 24GB→32k, 32GB→64k, 40GB→131k, 70GB+→262k. Pin explicitly with `--max-ctx N` (the boot log prints `llama ctx-size: N` either way). The tiers assume q8 KV; the hybrid-mamba architecture makes KV \~4-8x cheaper than a pure transformer, which is why 64k fits on a 24GB card at all.
 - **`KV_F16=1`** — full-precision KV cache instead of q8_0 (halves max context, zero quant loss). Measured on the 24GB Quadro: 64k f16 fits (`--max-ctx 65536`).
 - **`NO_MTP=1`** — drop the multi-token-prediction draft. The MTP speculative decoding (per [Simon Willison's writeup](https://simonwillison.net/2026/Aug/16/qwen-38-27b/)) gave us **79 tok/s vs 30** — but the draft is a second 15.5GB GGUF that must be resident, so it's a ≥40GB-card luxury. On a 24GB card it crash-loops; set `NO_MTP=1`.
 - **Reasoning defaults to `low`** server-side (`--chat-template-kwargs`). The model's default `xhigh` reasoning famously over-thinks — we watched it spend 138 tokens deciding to say "I'm Qwen." Override per request with `reasoning_effort`.
 
 ## Provider selection
 
-Cheapest bid wins, minus an optional blacklist — **empty by default** (a community tool shouldn't ship named provider addresses; populate `BLACKLIST=addr1,addr2` from your own experience). Our month of automated canary deployments (raw pilot data in [`data/`](data/), 176 real leases, sampling mode caveats apply) suggests paying more buys nothing on Akash: in our sample, sub-\$0.10/hr bids were ~98% reachable while one provider bidding 6x market went 0-for-8. A criteria-based filter ("avoid providers below X% measured reachability over N days") is planned.
+Cheapest bid wins, minus an optional blacklist — **empty by default** (a community tool shouldn't ship named provider addresses; populate `BLACKLIST=addr1,addr2` from your own experience). Our month of automated canary deployments (raw pilot data in [`data/`](data/), 176 real leases, sampling mode caveats apply) suggests paying more buys nothing on Akash: in our sample, sub-\$0.10/hr bids were \~98% reachable while one provider bidding 6x market went 0-for-8. A criteria-based filter ("avoid providers below X% measured reachability over N days") is planned.
 
 ## Field notes (paid for in failed deployments)
 
@@ -93,7 +93,7 @@ Things the Akash docs won't tell you, learned the hard way:
 
 - **The manifest gotcha.** The Console API canonicalizes your SDL into a JSON manifest at deployment creation. Submit *that* manifest at lease time — re-rendering your own YAML produces leases that go active, bill, and never schedule the workload.
 - **"Zero global services" is illegal.** Akash rejects manifests where nothing is exposed globally. Tailnet-only mode still declares a global expose; the server just doesn't listen on it.
-- **`uact` is micro-USD, not micro-AKT.** Bid prices are per block (~6.1s). `price × 590 / 1e6 ≈ $/hour`. We confirmed against console billing; converting via the AKT exchange rate silently understates cost ~2x.
+- **`uact` is micro-USD, not micro-AKT.** Bid prices are per block (\~6.1s). `price × 590 / 1e6 ≈ $/hour`. We confirmed against console billing; converting via the AKT exchange rate silently understates cost \~2x.
 - **On-chain GPU attributes lie by omission.** `model: rtx6000` doesn't distinguish the 24GB Quadro from the 48GB Ada, and most providers don't advertise a `ram` attribute. We found out via CUDA OOM. The first log line of every shoestring deploy is now `nvidia-smi` naming the actual card.
 - **Ephemeral tailscale nodes squat their hostnames** for a while after death. A crash-looping container piles up `name-1, name-2, ...` — eight of them, in our case, at four-minute intervals, re-downloading 32GB each lap. Fresh hostname per deploy; watch for suffix pileups as a crash-loop signal.
 - **Escrow is spent by open deployments, not by success.** Every failure path in shoestring closes the deployment; if you kill the script mid-deploy, `./shoestring.py close <dseq>` yourself.

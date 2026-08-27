@@ -6,7 +6,7 @@
 
 ## TL;DR
 
-**shoestring** is a single-file, MIT-licensed tool that turns the cheapest GPU on Akash into your private AI box in one command: a 27B coding model served for **\$0.16/hour**, an image-generation studio in ~12 minutes, and the training rig that shipped a production ML model for **~\$30** — all tailnet-private, all measured on real leases, all torn down with one command. We request **\$41,200** in AKT to harden it to v1.0, ship `shoestring train`, publish a continuously-updated provider-reliability dataset, and make Akash the easiest place on the internet to rent a GPU.
+**shoestring** is a single-file, MIT-licensed tool that turns the cheapest GPU on Akash into your private AI box in one command: a 27B coding model served for **\$0.16/hour**, an image-generation studio in \~12 minutes, and the training rig that shipped a production ML model for **\~\$30** — all tailnet-private, all measured on real leases, all torn down with one command. We request **\$41,200** in AKT to harden it to v1.0, ship `shoestring train`, publish a continuously-updated provider-reliability dataset, and make Akash the easiest place on the internet to rent a GPU.
 
 Repo: https://github.com/themailman05/shoestring — **already public**, including the raw canary pilot dataset (`data/`). The pilot schema did not record per-lease dseqs — an honesty gap we note rather than hide; the M2 dataset records dseqs from day one so every row is verifiable against the chain, and the worked examples in this proposal publish theirs.
 
@@ -20,13 +20,13 @@ The gap between "Akash has the cheapest GPUs anywhere" and "people actually use 
 
 What exists **today, working end-to-end**:
 
-- `shoestring.py deploy` → bids surveyed, cheapest reliable provider selected, model served ~6 minutes later; `shoestring.py close` → billing stops.
+- `shoestring.py deploy` → bids surveyed, cheapest reliable provider selected, model served \~6 minutes later; `shoestring.py close` → billing stops.
 - **Serving engines:** llama.cpp (GGUF, runs on \$0.16/hr 24GB cards) and vLLM (AWQ/FP8/NVFP4 — which also speaks the Anthropic protocol, so Claude Code connects to an Akash GPU natively). The measured 64k-context-on-24GB figure is partly a bonus of the default model's hybrid-mamba architecture; M1 publishes honest context tables for dense models too, alongside Llama / DeepSeek / GLM presets.
 - **Private by default option:** `--tailscale` joins the container to the user's tailnet as an ephemeral node; the model server binds to loopback and is unreachable from the public internet. WireGuard end-to-end.
 - **VRAM-adaptive:** the container reads the winning card's VRAM at boot and sizes context accordingly (24GB→32k … 80GB+→262k), because on-chain GPU attributes don't disclose memory.
-- **Data-driven provider selection:** cheapest-bid-wins informed by a month of automated canary deployments — 176 real leases whose pilot data *suggests* price and reliability are uncorrelated here (~98% reachability in the cheapest tier; one 6x-priced provider went 0-for-8). Pilot caveats (small per-provider n, unlabeled sampling mode, no dseqs) are documented in `data/`; the shipped `canary.py` closes those schema gaps, and M2 establishes the finding rigorously, in public.
+- **Data-driven provider selection:** cheapest-bid-wins informed by a month of automated canary deployments — 176 real leases whose pilot data *suggests* price and reliability are uncorrelated here (\~98% reachability in the cheapest tier; one 6x-priced provider went 0-for-8). Pilot caveats (small per-provider n, unlabeled sampling mode, no dseqs) are documented in `data/`; the shipped `canary.py` closes those schema gaps, and M2 establishes the finding rigorously, in public.
 - Ready-to-paste configs for **opencode** and **Claude Code** printed on every successful deploy.
-- **A third modality already prototyped:** `--engine comfyui-flux` boots ComfyUI + FLUX.1-schnell (Apache-2.0) for image generation on an a100-class lease — validated live (tailnet-only UI serving in ~12 minutes cold at \$1.84/hr). One tool, three workload classes: LLM serving, small-model training, image generation. This engine also debuted the **flight recorder**: a crashed workload serves its own boot log on the workload port instead of restarting blind, so failed leases debug themselves.
+- **A third modality already prototyped:** `--engine comfyui-flux` boots ComfyUI + FLUX.1-schnell (Apache-2.0) for image generation on an a100-class lease — validated live (tailnet-only UI serving in \~12 minutes cold at \$1.84/hr). One tool, three workload classes: LLM serving, small-model training, image generation. This engine also debuted the **flight recorder**: a crashed workload serves its own boot log on the workload port instead of restarting blind, so failed leases debug themselves.
 
 Beyond inference, the same machinery has done **real ML training on Akash**: a small production audio model, distilled from a much larger teacher entirely on Akash leases — Jupyter-driven runs, canary-informed provider selection, automatic checkpoint salvage — for roughly **\$30 total**, less than one hour of reserved hyperscaler H100 time. It ships today in a production iOS/macOS app built by the proposer (name and model details withheld while a patent application is pending; available privately to reviewers — disclosed plainly: M3 generalizes infrastructure built for our own product, and the community gets the generalized tool under MIT). M3's worked example makes the claim reproducible by anyone, lease dseqs published.
 
@@ -90,7 +90,7 @@ Progress reported monthly in the [Community Pool Spend Reporting](https://github
 | Item | Calculation | Amount |
 | --- | --- | --- |
 | Engineering (M1–M4) | 200 hours × \$200/hr | \$40,000 |
-| Marketplace test spend | live leases across engines/cards/providers for integration testing, 90 days of canary leases, and the worked training-distillation example (~\$0.10–2.50/hr × ~550 lease-hours) | \$800 |
+| Marketplace test spend | live leases across engines/cards/providers for integration testing, 90 days of canary leases, and the worked training-distillation example (\~\$0.10–2.50/hr × \~550 lease-hours) | \$800 |
 | Dashboard hosting | **12 months** of a small public dashboard + DB | \$400 |
 | **Total** | | **\$41,200** |
 
@@ -105,7 +105,7 @@ The rate reflects senior consulting work delivered solo; all code MIT-licensed, 
 
 This proposal follows a month of self-funded groundwork:
 
-- ~30 days of automated canary data: 176 real GPU leases, per-provider reachability and pricing (the pilot dataset behind the reliability filter and the price-vs-reliability finding; published raw in the repo's `data/` directory. Pilot rows lack dseqs — the M2 schema records them).
+- \~30 days of automated canary data: 176 real GPU leases, per-provider reachability and pricing (the pilot dataset behind the reliability filter and the price-vs-reliability finding; published raw in the repo's `data/` directory. Pilot rows lack dseqs — the M2 schema records them).
 - 127,000 market snapshots (provider × GPU model × availability, 15-min resolution) showing, e.g., a100 availability halving over three weeks.
 - Seven live deployments of shoestring itself in one day of iteration, debugging four distinct failure modes now encoded in the tool — total marketplace spend for that entire day: under \$5.
 - A complete small-model training campaign run on Akash leases (the audio model above): multi-round teacher→student distillation, Jupyter-driven, with provider selection fed by the canary shortlist and full artifact salvage — the working system `shoestring train` will generalize.
