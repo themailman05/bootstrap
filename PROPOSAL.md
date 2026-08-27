@@ -10,9 +10,13 @@
 
 Repo: https://github.com/themailman05/shoestring — **already public**, including the raw canary pilot dataset (`data/`). The pilot schema did not record per-lease dseqs — an honesty gap we note rather than hide; the M2 dataset records dseqs from day one so every row is verifiable against the chain, and the worked examples in this proposal publish theirs.
 
+## Goal / Mission
+
+Make Akash the default answer to "where do I run an open-weights model cheaply?" by making the first deploy trivial, private, and honest about costs — and by publishing the reliability data that lets users trust the marketplace's cheapest bids.
+
 ## Overview
 
-The single biggest gap between "Akash has the cheapest GPUs anywhere" and "people actually use them" is the first hour of user experience. Today that hour involves SDL authoring, manifest/lease mechanics with under-documented failure modes, GPU attributes that don't disclose VRAM, and pricing in a denom (`uact`, micro-USD per block) that most users misread. We know because we hit every one of these building shoestring — and encoded the fixes so the next person doesn't have to.
+The gap between "Akash has the cheapest GPUs anywhere" and "people actually use them" is the first hour of user experience: SDL authoring, under-documented manifest/lease failure modes, GPU attributes that don't disclose VRAM, a price denom most users misread. We hit every one of these building shoestring — and encoded the fixes so the next person doesn't have to.
 
 What exists **today, working end-to-end**:
 
@@ -20,11 +24,11 @@ What exists **today, working end-to-end**:
 - **Serving engines:** llama.cpp (GGUF, runs on \$0.16/hr 24GB cards) and vLLM (AWQ/FP8/NVFP4 — which also speaks the Anthropic protocol, so Claude Code connects to an Akash GPU natively). The measured 64k-context-on-24GB figure is partly a bonus of the default model's hybrid-mamba architecture; M1 publishes honest context tables for dense models too, alongside Llama / DeepSeek / GLM presets.
 - **Private by default option:** `--tailscale` joins the container to the user's tailnet as an ephemeral node; the model server binds to loopback and is unreachable from the public internet. WireGuard end-to-end.
 - **VRAM-adaptive:** the container reads the winning card's VRAM at boot and sizes context accordingly (24GB→32k … 80GB+→262k), because on-chain GPU attributes don't disclose memory.
-- **Data-driven provider selection:** cheapest-bid-wins informed by a month of automated canary deployments (6/day, real leases, real reachability checks). The pilot data — 176 leases, small per-provider n, mixed cheapest/explore sampling that was NOT labeled per row (a schema gap the shipped canary.py closes, along with recording dseqs) — *suggests* price and reliability are uncorrelated on this marketplace (the cheapest tier was ~98% reachable in our sample; one provider bidding 6x market went 0-for-8). M2 exists to establish this rigorously, at scale, in public.
+- **Data-driven provider selection:** cheapest-bid-wins informed by a month of automated canary deployments — 176 real leases whose pilot data *suggests* price and reliability are uncorrelated here (~98% reachability in the cheapest tier; one 6x-priced provider went 0-for-8). Pilot caveats (small per-provider n, unlabeled sampling mode, no dseqs) are documented in `data/`; the shipped `canary.py` closes those schema gaps, and M2 establishes the finding rigorously, in public.
 - Ready-to-paste configs for **opencode** and **Claude Code** printed on every successful deploy.
 - **A third modality already prototyped:** `--engine comfyui-flux` boots ComfyUI + FLUX.1-schnell (Apache-2.0) for image generation on an a100-class lease — validated live (tailnet-only UI serving in ~12 minutes cold at \$1.84/hr). One tool, three workload classes: LLM serving, small-model training, image generation. This engine also debuted the **flight recorder**: a crashed workload serves its own boot log on the workload port instead of restarting blind, so failed leases debug themselves.
 
-And beyond inference, we have already used the same machinery for **real ML training on Akash**: a small production audio model, distilled from a much larger teacher, was trained entirely on Akash GPU leases — Jupyter-driven runs, canary-informed provider selection, automatic checkpoint/artifact salvage before teardown — for roughly **\$30 of total marketplace spend**. That model ships today in a production iOS/macOS app built by the proposer (name and model details withheld while a patent application is pending; available privately to reviewers — and disclosed plainly: M3 generalizes infrastructure built for our own product, and the community receives the generalized tool under MIT), running in real time on phone CPUs. Small-model training is exactly the workload where Akash's spot pricing shines: the entire multi-round campaign cost less than one hour of reserved H100 time on a hyperscaler. M3's worked example makes this claim reproducible by anyone, with its lease dseqs published.
+Beyond inference, the same machinery has done **real ML training on Akash**: a small production audio model, distilled from a much larger teacher entirely on Akash leases — Jupyter-driven runs, canary-informed provider selection, automatic checkpoint salvage — for roughly **\$30 total**, less than one hour of reserved hyperscaler H100 time. It ships today in a production iOS/macOS app built by the proposer (name and model details withheld while a patent application is pending; available privately to reviewers — disclosed plainly: M3 generalizes infrastructure built for our own product, and the community gets the generalized tool under MIT). M3's worked example makes the claim reproducible by anyone, lease dseqs published.
 
 **All of the above was self-funded, and no compensation is requested for any pre-proposal work.** It is presented as evidence of execution capability and as de-risking: this proposal funds the hardening and generalization of a thing that already works, not a plan.
 
@@ -35,10 +39,6 @@ Akash Console, its templates, and awesome-akash are real on-ramps, and where a c
 There is a direct precedent for this trajectory in a sibling ecosystem. In Sia, the community-built [sia-host-dashboard](https://github.com/siacentral/sia-host-dashboard) (Sia Central) pioneered host health monitoring, metrics, and income analytics as an independent tool — and proved the demand so thoroughly that the Sia Foundation built the functionality into its official [hostd](https://github.com/SiaFoundation/hostd) daemon with an embedded web UI, at which point the community tool was gracefully archived ("deprecated and replaced by the Sia Foundation's hostd", per its own README). **That is the intended endgame here**: shoestring's canary and reliability data exist to prove out what marketplace-trust tooling Akash needs; the win condition is Console or the provider stack absorbing it upstream, not a permanently parallel community tool. The proposer watched this pattern from inside the Sia ecosystem — it is how healthy decentralized-infra communities metabolize good ideas.
 
 Why this benefits Akash: every shoestring user is new GPU demand (inference *and* training), the tool's field notes double as ecosystem documentation, and the canary methodology gives the community something it currently lacks — *independent, continuous, published reliability data on providers*.
-
-## Goal / Mission
-
-Make Akash the default answer to "where do I run an open-weights model cheaply?" by making the first deploy trivial, private, and honest about costs — and by publishing the reliability data that lets users trust the marketplace's cheapest bids.
 
 ## Detailed Deliverables
 
