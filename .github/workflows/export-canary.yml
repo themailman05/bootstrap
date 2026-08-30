@@ -1,0 +1,34 @@
+name: Export canary dataset
+
+on:
+  schedule:
+    - cron: "35 13 * * *"   # daily, after the 12:05 UTC canary run lands
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Export from PostgREST mirror
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          pip install --quiet requests
+          python scripts/export_canary.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name "canary-export"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/canary_live.csv
+          git diff --cached --quiet && { echo "no new data"; exit 0; }
+          rows=$(($(wc -l < data/canary_live.csv) - 1))
+          git commit -m "data: daily canary export ($rows rows)"
+          git push
