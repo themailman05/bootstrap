@@ -6,9 +6,9 @@
 
 ## TL;DR
 
-**shoestring** is a single-file, MIT-licensed tool that turns the cheapest GPU on Akash into your private AI box in one command: a 27B coding model served for **\$0.16/hour**, an image-generation studio in \~12 minutes, and the training rig that shipped a production ML model for **\~\$30** — all tailnet-private, all measured on real leases, all torn down with one command. We request **\$41,200** in AKT to harden it to v1.0, ship `shoestring train`, publish a continuously-updated provider-reliability dataset, and make Akash the easiest place on the internet to rent a GPU.
+**shoestring** is a single-file, MIT-licensed tool that turns the cheapest GPU on Akash into your private AI box in one command: a 27B coding model served for **\$0.16/hour**, an image-generation studio in \~12 minutes, and the training rig that shipped a production ML model for **\~\$30** — all tailnet-private, all measured on real leases, all torn down with one command. We request **\$41,200** in AKT to run and publish a continuous provider-reliability + marketplace-census dataset (the canary is already live), harden the tool to v1.0, ship `shoestring train`, and make Akash the easiest place on the internet to rent a GPU.
 
-Repo: https://github.com/themailman05/shoestring — **already public**, including the raw canary pilot dataset (`data/`). The pilot schema did not record per-lease dseqs — an honesty gap we note rather than hide; the M2 dataset records dseqs from day one so every row is verifiable against the chain, and the worked examples in this proposal publish theirs.
+Repo: https://github.com/themailman05/shoestring — **already public**, including the raw canary pilot dataset (`data/`). The pilot schema did not record per-lease dseqs — an honesty gap we note rather than hide; the M1 dataset records dseqs from day one so every row is verifiable against the chain, and the worked examples in this proposal publish theirs.
 
 ## Goal / Mission
 
@@ -21,10 +21,10 @@ The gap between "Akash has the cheapest GPUs anywhere" and "people actually use 
 What exists **today, working end-to-end**:
 
 - `shoestring.py deploy` → bids surveyed, cheapest reliable provider selected, model served \~6 minutes later; `shoestring.py close` → billing stops.
-- **Serving engines:** llama.cpp (GGUF, runs on \$0.16/hr 24GB cards) and vLLM (AWQ/FP8/NVFP4 — which also speaks the Anthropic protocol, so Claude Code connects to an Akash GPU natively). The measured 64k-context-on-24GB figure is partly a bonus of the default model's hybrid-mamba architecture; M1 publishes honest context tables for dense models too, alongside Llama / DeepSeek / GLM presets.
+- **Serving engines:** llama.cpp (GGUF, runs on \$0.16/hr 24GB cards) and vLLM (AWQ/FP8/NVFP4 — which also speaks the Anthropic protocol, so Claude Code connects to an Akash GPU natively). The measured 64k-context-on-24GB figure is partly a bonus of the default model's hybrid-mamba architecture; M2 publishes honest context tables for dense models too, alongside Llama / DeepSeek / GLM presets.
 - **Private by default option:** `--tailscale` joins the container to the user's tailnet as an ephemeral node; the model server binds to loopback and is unreachable from the public internet. WireGuard end-to-end.
 - **VRAM-adaptive:** the container reads the winning card's VRAM at boot and sizes context accordingly (24GB→32k … 80GB+→262k), because on-chain GPU attributes don't disclose memory.
-- **Data-driven provider selection:** cheapest-bid-wins informed by a month of automated canary deployments — 176 real leases whose pilot data *suggests* price and reliability are uncorrelated here (\~98% reachability in the cheapest tier; one 6x-priced provider went 0-for-8). Pilot caveats, stated plainly: small per-provider n, unlabeled sampling mode, no dseqs, and an empty `gpu_model` column in all 176 rows (a recording bug, since fixed — the live canary now captures it, and rows recovered from chain data are being backfilled). The shipped `canary.py` closes all of these schema gaps, and M2 establishes the finding rigorously, in public.
+- **Data-driven provider selection:** cheapest-bid-wins informed by a month of automated canary deployments — 176 real leases whose pilot data *suggests* price and reliability are uncorrelated here (\~98% reachability in the cheapest tier; one 6x-priced provider went 0-for-8). Pilot caveats, stated plainly: small per-provider n, unlabeled sampling mode, no dseqs, and an empty `gpu_model` column in all 176 rows (a recording bug, since fixed — the live canary now captures it, and rows recovered from chain data are being backfilled). The shipped `canary.py` closes all of these schema gaps, and M1 establishes the finding rigorously, in public. To be explicit: the pilot evidences reachability, pricing, and time-to-ready; the GPU truth-data capability (advertised attribute vs `nvidia-smi` reality) begins with the live canary, not the pilot.
 - Ready-to-paste configs for **opencode** and **Claude Code** printed on every successful deploy.
 - **A third modality already prototyped:** `--engine comfyui-flux` boots ComfyUI + FLUX.1-schnell (Apache-2.0) for image generation on an a100-class lease — validated live (tailnet-only UI serving in \~12 minutes cold at \$1.84/hr). One tool, three workload classes: LLM serving, small-model training, image generation. This engine also debuted the **flight recorder**: a crashed workload serves its own boot log on the workload port instead of restarting blind, so failed leases debug themselves.
 
@@ -42,7 +42,18 @@ Why this benefits Akash: every shoestring user is new GPU demand (inference *and
 
 ## Detailed Deliverables
 
-**M1 — shoestring v1.0 (hardened tool)**
+**M1 — Provider reliability canary + marketplace census (public dataset + dashboard)**
+
+*Promoted to first priority during review: the sole substantive community feedback to date — from a provider/validator who independently verified the pilot data against his own records — named this deliverable "the part I'd most want to exist" and the GPU truth data "worth funding on its own."*
+
+- The canary **already ships and runs** (`canary.py`): real paid lease per probe, cheapest/coverage modes labeled per row, dseq + reachability + time-to-ready + a small CPU benchmark recorded, CSV-first with an optional PostgREST mirror — no database required. M1 funds running it continuously, at full-market scale, in public.
+- **Marketplace census built in**: probes cycle `gpu` / `cpu-micro` / `cpu-heavy` profiles, and every bid received is persisted — the `cpu-micro` universal profile makes each probe a census of who is actually alive on a network with \~1,800 registered providers. First census probe (2026-08-30): seven bidders, five of them providers never seen in a month of GPU-only probing.
+- Publish the live dataset (public dashboard + daily CSV export, already automated) with per-provider reachability, pricing history, benchmark-per-dollar, and **GPU truth data** (advertised attribute vs. `nvidia-smi` reality — built new here; the pilot does not evidence this capability).
+- **Provider evaluation framework co-drafted with operators**: evidence standards written before the first entry, public dispute/cure process, remediation probes for filtered providers — incorporating working notes from provider-side blacklist operation offered in the review thread.
+- Monthly summary reports to the community (sig-providers).
+- **Continuity is a named gate, not a hope**: daily CSV exports live in a public repo so the dataset outlives any dashboard; hosting is budgeted for 12 months (not one quarter); and at quarter-end the operational canary is offered for handoff to sig-providers (or another community operator), with `canary.py` as the runnable artifact that makes the handoff real. If no operator accepts, we publish a shutdown-and-archive plan rather than letting stale data masquerade as live — the sia-host-dashboard → hostd absorption (see above) is the model: prove the need independently, then hand the pattern upstream and archive gracefully.
+
+**M2 — shoestring v1.0 (hardened tool)**
 - All four engines integration-tested on live leases (llamacpp is battle-tested today; the vLLM engines are SDL-validated but need funded GPU-hours to verify serving across card classes).
 - `--gpu` targeting flag, multi-model presets beyond Qwen (Llama, DeepSeek, GLM families), `--list` (show your open leases), resume/reattach.
 - Harden the `comfyui-flux` image-generation prototype (workflow presets, output persistence) alongside the LLM engines.
@@ -50,12 +61,6 @@ Why this benefits Akash: every shoestring user is new GPU demand (inference *and
 - **Headscale support** (self-hosted, open-source control plane; same clients) so the private-serving mode has no proprietary dependency, with the restrictive ACL shipped as the default documented path rather than a footnote.
 - **Criteria-based provider filtering replaces the named blacklist**: v1.0 ships with an *empty* static list and an opt-in filter of the form "avoid providers below X% measured reachability over the last N days," driven by the public canary data — transparent criteria, self-healing when a provider improves, and a published contest/cure process. No hardcoded provider addresses in a community-funded tool.
 - Threat-model documentation expansion (provider trust, key handling, ACL recipes; the llama-server `/v1/models` auth gap and peers).
-
-**M2 — Provider reliability canary (public dataset + dashboard)**
-- The standalone canary **already ships in the repo** (`canary.py`: real GPU lease per run, cheapest/explore modes labeled per row, dseq + reachability + time-to-ready + price recorded, CSV-first with an optional PostgREST mirror — no database required). M2 funds running it continuously and publishing the results.
-- Publish the live dataset (Postgres → public dashboard + daily CSV export) with per-provider reachability, pricing history, and GPU-model truth data (advertised attribute vs. nvidia-smi reality).
-- Monthly summary reports to the community (sig-providers).
-- **Continuity is a named gate, not a hope**: daily CSV exports live in a public repo so the dataset outlives any dashboard; hosting is budgeted for 12 months (not one quarter); and at quarter-end the operational canary is offered for handoff to sig-providers (or another community operator), with `canary.py` (already in the repo) as the runnable artifact that makes the handoff real. If no operator accepts, we publish a shutdown-and-archive plan rather than letting stale data masquerade as live — the sia-host-dashboard → hostd absorption (see above) is the model: prove the need independently, then hand the pattern upstream and archive gracefully.
 
 **M3 — `shoestring train`: small-model training utility**
 - Generalize the workflow that trained our production audio model into a first-class subcommand: `shoestring train` boots a GPU Jupyter/script box with (a) dataset staging from any S3-compatible bucket, (b) **automatic checkpoint/artifact salvage** to the user's bucket on every epoch and at teardown (leases are ephemeral; our workflow has already survived a destroyed 81GB dataset with zero checkpoint loss), (c) canary-informed provider preference, and (d) the same tailnet-only privacy mode as inference.
@@ -74,8 +79,8 @@ Gates are written to be checkable by strangers, not self-attested:
 
 | Milestone | Weeks | Deliverable gate | Tranche |
 | --- | --- | --- | --- |
-| M1: v1.0 | 1–6 | tagged release + reproduction doc, with **at least one independent community reproduction** of a deploy on each engine posted in Discussions | 35% |
-| M2: canary | 4–10 | public dashboard live + 30 days of published data (dseq-verifiable) + continuity/handoff plan published | 25% |
+| M1: canary + census | 1–10 | public dashboard live + 30 days of published data (dseq-verifiable) + continuity/handoff plan + co-drafted evaluation framework published | 35% |
+| M2: v1.0 | 2–8 | tagged release + reproduction doc, with **at least one independent community reproduction** of a deploy on each engine posted in Discussions | 25% |
 | M3: train | 6–12 | `shoestring train` shipped + worked distillation example **rerun by a named third party from the docs alone**, costs and dseqs published | 25% |
 | M4: content | 8–13 | 4 tutorials published + docs PRs **merged, or open ≥30 days with maintainer review requested** | 15% |
 
@@ -105,7 +110,7 @@ The rate reflects senior consulting work delivered solo; all code MIT-licensed, 
 
 This proposal follows a month of self-funded groundwork:
 
-- \~30 days of automated canary data: 176 real GPU leases, per-provider reachability and pricing (the pilot dataset behind the reliability filter and the price-vs-reliability finding; published raw in the repo's `data/` directory. Pilot rows lack dseqs — the M2 schema records them).
+- \~30 days of automated canary data: 176 real GPU leases, per-provider reachability and pricing (the pilot dataset behind the reliability filter and the price-vs-reliability finding; published raw in the repo's `data/` directory. Pilot rows lack dseqs — the live canary schema records them).
 - 127,000 market snapshots (provider × GPU model × availability, 15-min resolution) showing, e.g., a100 availability halving over three weeks.
 - Seven live deployments of shoestring itself in one day of iteration, debugging four distinct failure modes now encoded in the tool — total marketplace spend for that entire day: under \$5.
 - A complete small-model training campaign run on Akash leases (the audio model above): multi-round teacher→student distillation, Jupyter-driven, with provider selection fed by the canary shortlist and full artifact salvage — the working system `shoestring train` will generalize.
@@ -116,6 +121,12 @@ This proposal follows a month of self-funded groundwork:
 - Model/serving context: Simon Willison on Qwen 3.8 27B — https://simonwillison.net/2026/Aug/16/qwen-38-27b/
 - vLLM's native Anthropic endpoint (the Claude Code connection): https://docs.vllm.ai/en/stable/serving/integrations/claude_code/
 - Proposal process followed: https://github.com/orgs/akash-network/discussions/170
+
+## Revisions during review
+
+*Kept as a changelog so reviewers can see what changed and why.*
+
+- **2026-08-30** — Canary v2 shipped: marketplace census (profile matrix + full bid persistence), coverage-driven exploration, per-lease CPU benchmark. Daily automated dataset publication live (`data/canary_live.csv` + provenance notes). `gpu_model` gap in the pilot stated plainly (per review feedback), 99/222 historical rows backfilled via unambiguous market inference, the rest left NULL rather than guessed; the live canary records the field measured from the winning bid. **Milestones reordered: the canary/census is now M1**, reflecting review feedback from the provider side.
 
 ## Review Plan
 
