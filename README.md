@@ -100,11 +100,14 @@ Things the Akash docs won't tell you, learned the hard way:
 
 ## The reliability canary
 
-`canary.py` is the measurement engine behind the provider data: each run places a **real, paid GPU lease** with the cheapest bid (or, with `--explore-p`, a random non-cheapest bid so the whole market gets sampled), checks whether the workload actually becomes reachable, records the result, and closes the lease. A few cents per run; 6 runs/day builds a useful picture within weeks.
+`canary.py` is the measurement engine behind the provider data: each run places a **real, paid lease**, checks whether the workload actually becomes reachable (and times a small CPU benchmark), records the result, and closes. A few cents per run; 6 runs/day builds a useful picture within weeks.
+
+It samples the whole marketplace, not just GPUs: three profiles (`gpu`, `cpu-micro`, `cpu-heavy`) cycle per run — `cpu-micro` is the universal bid nearly every live provider can serve, so its bid lists double as a **census of who is actually alive** on a network with ~1,800 registered providers. Every bid received (leased or not) is persisted to `data/bids.csv`; exploration is coverage-driven (the least-recently-tested bidder, not a random one), so the long tail actually gets walked.
 
 ```bash
 export AKASH_API_KEY=...
-./canary.py run                 # one lease -> one row in data/canary.csv
+./canary.py run                 # one probe, auto-cycling profiles
+./canary.py sweep               # one probe of every profile
 ```
 
 **No database required.** Rows append to a local CSV (same format as the published pilot in [`data/`](data/), plus `dseq` and sampling-`mode` columns the pilot lacked — every new row is verifiable against the chain). Optionally set `SUPABASE_URL`/`SUPABASE_KEY` (any PostgREST endpoint) to *also* mirror rows to a shared table; the schema is in the script's docstring. The database is strictly supplemental — the CSV is the source of truth.
