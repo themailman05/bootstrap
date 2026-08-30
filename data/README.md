@@ -30,3 +30,12 @@ profile only reaches providers who serve GPUs.
 The frozen pilot snapshot cited by [PROPOSAL.md](../PROPOSAL.md) —
 kept immutable for reproducibility of the proposal's claims. Superset
 data with corrections lives in `canary_live.csv`.
+
+## Canary transparency
+
+All shoestring-canary probes are placed by tenant wallet
+**`akash1dtf429gnxhdgtfklm50l0tws8ukkl7m7ejk9e9`** via the Akash Console
+API (13-digit timestamp-style dseqs). Providers: if you see a short lease
+from this address — a few minutes, a tiny CPU workload, then a clean
+close — that was a measurement probe, it paid for its minutes, and your
+result is in `canary_live.csv`. Questions or disputes: open an issue.
