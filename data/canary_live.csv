@@ -222,3 +222,10 @@ ts,provider_owner,gpu_model,bid_price_uact_per_block,reachable,time_to_ready_sec
 2026-08-30T04:05:40.481019+00:00,akash1al463a2f6jvf506e73hx0329fwgwz66r7cpkhr,rtx5090,1194.42,True,32.5562,
 2026-08-30T08:05:42.339489+00:00,akash16yr3wxt97ae045a06kr3ycde9srcgpg8syjxxm,,188.389,True,35.8703,
 2026-08-30T12:05:30.872487+00:00,akash16yr3wxt97ae045a06kr3ycde9srcgpg8syjxxm,,188.389,False,,exception:HTTPError:404 Client Error: Not Found for url: https://console-api.akash.network/v1/leases
+2026-08-30T16:06:02.618038+00:00,akash16yr3wxt97ae045a06kr3ycde9srcgpg8syjxxm,rtx6000,188.389,True,54.3107,
+2026-08-30T20:05:46.901141+00:00,akash1al463a2f6jvf506e73hx0329fwgwz66r7cpkhr,rtx5090,1194.42,True,36.4649,
+2026-08-31T00:05:47.851674+00:00,akash16yr3wxt97ae045a06kr3ycde9srcgpg8syjxxm,v100,136.052,True,34.912,
+2026-08-31T04:05:41.545823+00:00,akash16yr3wxt97ae045a06kr3ycde9srcgpg8syjxxm,v100,136.052,False,,"exception:HTTPError:404 from POST /leases: {""error"":""NotFoundError"",""message"":""no lease for deployment\n"",""code"":""not_found"",""type"":""client_error""}"
+2026-08-31T08:05:42.390268+00:00,akash1al463a2f6jvf506e73hx0329fwgwz66r7cpkhr,rtx5090,1194.42,True,34.3942,
+2026-08-31T12:05:44.554405+00:00,akash16yr3wxt97ae045a06kr3ycde9srcgpg8syjxxm,rtx6000,188.389,True,38.4868,
+2026-08-31T16:05:53.223673+00:00,akash1al463a2f6jvf506e73hx0329fwgwz66r7cpkhr,rtx5090,1194.42,True,43.6502,
