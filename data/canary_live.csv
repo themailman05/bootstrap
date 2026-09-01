@@ -229,3 +229,9 @@ ts,provider_owner,gpu_model,bid_price_uact_per_block,reachable,time_to_ready_sec
 2026-08-31T08:05:42.390268+00:00,akash1al463a2f6jvf506e73hx0329fwgwz66r7cpkhr,rtx5090,1194.42,True,34.3942,
 2026-08-31T12:05:44.554405+00:00,akash16yr3wxt97ae045a06kr3ycde9srcgpg8syjxxm,rtx6000,188.389,True,38.4868,
 2026-08-31T16:05:53.223673+00:00,akash1al463a2f6jvf506e73hx0329fwgwz66r7cpkhr,rtx5090,1194.42,True,43.6502,
+2026-08-31T20:05:42.352078+00:00,akash15tl6v6gd0nte0syyxnv57zmmspgju4c3xfmdhk,t4,191.878,True,32.8471,
+2026-09-01T00:05:58.207809+00:00,akash1am3sv9ac6yq6a4s2hkkcn6sd6723fpkp3en08s,rtx4090,462.865,True,48.4687,
+2026-09-01T04:05:44.25446+00:00,akash1am3sv9ac6yq6a4s2hkkcn6sd6723fpkp3en08s,rtx4090,462.865,True,36.6204,
+2026-09-01T08:05:54.066678+00:00,akash1al463a2f6jvf506e73hx0329fwgwz66r7cpkhr,rtx5090,1194.42,True,43.2655,
+2026-09-01T12:05:48.529286+00:00,akash16yr3wxt97ae045a06kr3ycde9srcgpg8syjxxm,rtx6000,284.921,True,39.9832,
+2026-09-01T16:07:36.321234+00:00,akash15tl6v6gd0nte0syyxnv57zmmspgju4c3xfmdhk,t4,191.878,False,,never_reachable
