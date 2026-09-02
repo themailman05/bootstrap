@@ -217,14 +217,28 @@ def run_one(profile, args):
             "chosen": False,
         } for b in ranked]
 
-        if len(ranked) > 1 and random.random() < args.explore_p:
+        # Per-provider cooldown (GPU profile only): a probe reserves the
+        # whole GPU for minutes, so no provider gets GPU-probed more than
+        # once per 24h. Raised by a provider in review -- fair point.
+        seen = _last_tested(args.out)
+        pool = ranked
+        if profile == "gpu":
+            cutoff = datetime.now(timezone.utc).timestamp() - 24 * 3600
+            def fresh(b):
+                ts_prev = seen.get(b["bid"]["id"]["provider"])
+                if not ts_prev:
+                    return True
+                return datetime.fromisoformat(ts_prev).timestamp() < cutoff
+            eligible = [b for b in ranked if fresh(b)]
+            if eligible:
+                pool = eligible
+        if len(pool) > 1 and random.random() < args.explore_p:
             # coverage-driven: least-recently-tested non-cheapest bidder
-            seen = _last_tested(args.out)
-            chosen = min(ranked[1:],
+            chosen = min(pool[1:],
                          key=lambda b: seen.get(b["bid"]["id"]["provider"], ""))
             mode = "coverage"
         else:
-            chosen, mode = ranked[0], "cheapest"
+            chosen, mode = pool[0], "cheapest"
         provider = chosen["bid"]["id"]["provider"]
         bid_price = float(chosen["bid"]["price"]["amount"])
         gpu_model = ss.extract_gpu_model(chosen)
