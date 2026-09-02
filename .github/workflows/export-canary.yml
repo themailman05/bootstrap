@@ -29,6 +29,7 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add data/canary_live.csv
           git diff --cached --quiet && { echo "no new data"; exit 0; }
+          git pull --rebase --autostash
           rows=$(($(wc -l < data/canary_live.csv) - 1))
           git commit -m "data: daily canary export ($rows rows)"
           git push

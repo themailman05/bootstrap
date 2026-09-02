@@ -1,0 +1,39 @@
+name: Canary probe
+
+on:
+  schedule:
+    - cron: "7 2,6,10,14,18,22 * * *"   # 6x/day, offset from the legacy 0/4/8... canary
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "profile (empty = auto-cycle)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency: canary-data   # never two probes racing the data files
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run probe
+        env:
+          AKASH_API_KEY: ${{ secrets.AKASH_API_KEY }}
+        run: |
+          pip install --quiet requests
+          python canary.py run ${{ github.event.inputs.profile != '' && format('--profile {0}', github.event.inputs.profile) || '' }}
+
+      - name: Commit results
+        run: |
+          git config user.name "canary-probe"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/canary.csv data/bids.csv
+          git diff --cached --quiet && { echo "no rows (probe errored before recording?)"; exit 0; }
+          git pull --rebase --autostash
+          git commit -m "data: canary probe $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
