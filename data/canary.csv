@@ -1,2 +1,3 @@
 ts,dseq,profile,provider_owner,gpu_model,mode,bid_price_uact_per_block,reachable,time_to_ready_seconds,bench_seconds,failure_reason
 2026-08-30T14:55:18.434847+00:00,1788101718738,cpu-micro,akash15tl6v6gd0nte0syyxnv57zmmspgju4c3xfmdhk,,cheapest,2.954114,False,,,never_reachable
+2026-09-02T00:20:39.707788+00:00,1788308439894,cpu-micro,akash16yr3wxt97ae045a06kr3ycde9srcgpg8syjxxm,,coverage,2.954114,True,102.4,56.92,
