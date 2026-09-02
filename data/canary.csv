@@ -3,3 +3,4 @@ ts,dseq,profile,provider_owner,gpu_model,mode,bid_price_uact_per_block,reachable
 2026-09-02T00:20:39.707788+00:00,1788308439894,cpu-micro,akash16yr3wxt97ae045a06kr3ycde9srcgpg8syjxxm,,coverage,2.954114,True,102.4,56.92,,
 2026-09-02T07:03:17.670373+00:00,1788332597938,cpu-heavy,akash1hgulk6aekakqzc0v6wukrd3dy9n90f5gkl4ezk,,coverage,46.0,True,45.6,15.301,,http://grj0akd80te5ffqpoarecb0qas.ingress.h4i-dedicated.eu-sw-2.digitalfrontier.so
 2026-09-02T14:22:49.336745+00:00,1788358969472,gpu,akash1al463a2f6jvf506e73hx0329fwgwz66r7cpkhr,rtx5090,coverage,1194.415562,True,33.2,4.263,,http://mfbav1pbltbuh87e28febs26sc.ingress.5090.mel.val.akash.pub
+2026-09-02T20:57:52.906702+00:00,1788382673104,cpu-micro,akash1cg7nnkwy8yzulr6x5egn7n06pgthz5wu5auvvv,,cheapest,5.466273,True,66.1,9.008,,http://i6esur2h5hdqncm39b79ppr5u4.ingress.cpu.lax.lsn.akash.pub
