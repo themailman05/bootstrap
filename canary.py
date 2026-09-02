@@ -136,7 +136,7 @@ PROFILES = {
 
 FIELDS = ["ts", "dseq", "profile", "provider_owner", "gpu_model", "mode",
           "bid_price_uact_per_block", "reachable", "time_to_ready_seconds",
-          "bench_seconds", "failure_reason"]
+          "bench_seconds", "failure_reason", "endpoint"]
 BID_FIELDS = ["ts", "profile", "provider", "gpu_model",
               "bid_price_uact_per_block", "chosen"]
 
@@ -144,6 +144,17 @@ BID_FIELDS = ["ts", "profile", "provider", "gpu_model",
 def _append(path, fields, rows):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     new = not os.path.exists(path)
+    if not new:
+        with open(path) as f:
+            header = f.readline().strip().split(",")
+        if header != fields and set(header) < set(fields):
+            # schema grew: rewrite with new columns, old rows padded empty
+            old = list(csv.DictReader(open(path)))
+            with open(path, "w", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=fields)
+                w.writeheader()
+                for r in old:
+                    w.writerow({k: r.get(k, "") for k in fields})
     with open(path, "a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields)
         if new:
@@ -190,6 +201,7 @@ def run_one(profile, args):
     bid_price = ttr = bench = None
     reachable = False
     failure_reason = None
+    run_endpoint = [None]  # captured for write-time attribution
     start = time.time()
     ts = datetime.now(timezone.utc).isoformat()
 
@@ -250,6 +262,7 @@ def run_one(profile, args):
         ss.accept_bid(dseq, manifest, provider)
 
         endpoint = ss.get_endpoint(dseq, timeout_s=90)
+        run_endpoint[0] = endpoint
         if not endpoint:
             failure_reason = "no_endpoint"
             return
@@ -281,6 +294,7 @@ def run_one(profile, args):
         "mode": mode, "bid_price_uact_per_block": bid_price,
         "reachable": reachable, "time_to_ready_seconds": ttr,
         "bench_seconds": bench, "failure_reason": failure_reason,
+        "endpoint": run_endpoint[0],
     }
     _append(args.out, FIELDS, [row])
     _mirror(row)
