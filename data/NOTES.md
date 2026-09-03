@@ -16,11 +16,21 @@ failure with an *honestly unresolved* cause is worth almost as much.
   routes), while its kubelet kept the node `Ready` — a **silent
   partition**: the scheduler places workloads on a node that cannot run
   them; the ingress URI exists; nothing ever answers.
-- **Causation status: unresolved, per the operator's own correction.**
-  The partition is log-evidenced; that this specific lease landed on the
-  partitioned node is *plausible but not established*. Node-level lookup
-  against the dseq above is pending. Recorded here exactly as far as the
-  evidence goes, no further.
+- **Causation status — final, per the operator's node lookup:** failure
+  occurred; provider-side records aged out; root cause unconfirmed. A
+  documented silent-partition incident on one node (kubelet log flood
+  \~140 lines/min vs 1–5 baseline, continuous through the window)
+  overlapped and could account for it if the workload was scheduled
+  there; placement is no longer determinable. Post-incident detection has
+  since been added by the operator for this failure class (with a
+  disclosed gap: the Ceph-OSD cross-check misses OSD-less nodes;
+  per-node outbound heartbeat is planned but not built).
+- **Lease-duration cross-check (operator):** on-chain the lease lived 23
+  blocks (\~138s) and closed `lease_closed_owner`. Consistent with the
+  probe design: the lease exists only from bid-acceptance to close —
+  \~10s endpoint discovery + a full 120s reachability poll; the longer
+  "\~3.5 minute" figure includes pre-lease bid wait. The poll ran its
+  full window.
 - Operator remediations shipped: Ceph OSD status cross-check in daily
   health script; per-node outbound heartbeat cron.
 
@@ -45,3 +55,17 @@ failure with an *honestly unresolved* cause is worth almost as much.
   inference; 123 left NULL (see `README.md`).
 - 2026-09-02: all 48 `akash1sevd2…` rows set to `rtx3090` —
   **operator-confirmed** on the record in the proposal thread.
+
+## Dataset completeness audit (chain reconciliation, 2026-09-03)
+
+`scripts/reconcile_chain.py` audits the dataset against the chain — the
+ground-truth ledger of every lease the canary wallet created. Result:
+**one lost row in the dataset's lifetime** (2026-08-29T16:05Z, dseq
+`1788019503640`, provider `akash1al463…`): the run completed its lease
+lifecycle but died before recording — resource contention on the thin
+cluster hosting the legacy canary is the leading suspect. All other
+unmatched chain leases were identified as workloads or tests and are
+published with purposes in `nonprobe_leases.csv` — including the ML
+training campaign lease (`1785460994984`) this project grew out of.
+Recording durability is a reason the probe series is migrating to public
+CI (and, planned, to Akash itself).

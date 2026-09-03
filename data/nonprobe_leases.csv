@@ -1,0 +1,21 @@
+dseq,purpose
+1787438864605,workload: qwen0826 LLM serving (rtx6000)
+1787445437570,workload: qwen64 LLM serving (a100)
+1787446322211,workload: qwenbox LLM serving attempt
+1787448260989,workload: qwenq4 LLM serving (rtx6000)
+1787450530984,workload: qwen64k LLM serving attempt
+1787450944531,workload: qwen64x LLM serving (rtx6000)
+1787793584629,workload: qwen0826 LLM serving (rtx6000)
+1787800823578,workload: comfyx1 image-gen attempt (a100)
+1787803104883,workload: comfyx1 image-gen attempt (a100)
+1787803883426,workload: comfyx2 image-gen serving (a100)
+1786660236541,test: multi-provider sweep 2026-08-13
+1786660278942,test: multi-provider sweep 2026-08-13
+1786660313768,test: multi-provider sweep 2026-08-13
+1786660355655,test: multi-provider sweep 2026-08-13
+1786660391394,test: multi-provider sweep 2026-08-13
+1787437643695,workload: shoestring launch-night deploy attempt 1
+1787437783710,workload: shoestring launch-night deploy attempt 2
+1787437843993,workload: shoestring launch-night deploy attempt 3
+1785460994984,workload: ML training campaign 2026-07-31 to 2026-08-10 (the distillation run)
+1786660198391,test: multi-provider sweep 2026-08-13
