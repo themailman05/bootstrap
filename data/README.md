@@ -2,7 +2,12 @@
 
 ## `canary_live.csv`
 
-The full, continuously-updated canary dataset — refreshed daily by
+**Legacy series, frozen 2026-09-03** — the cluster-hosted GPU-only canary
+retired in favor of the public-CI probe series; its final rows land with
+the last export. The **live dataset is `canary.csv`** (richer schema:
+dseq, endpoint, profile, benchmark, mode), written directly by probes
+running in public GitHub Actions. This file remains for the historical
+series — refreshed daily by
 [`export-canary.yml`](../.github/workflows/export-canary.yml) after the
 12:05 UTC run. Each row is one real, paid GPU lease: deployed, probed for
 reachability, closed.
