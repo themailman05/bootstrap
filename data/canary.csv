@@ -8,3 +8,4 @@ ts,dseq,profile,provider_owner,gpu_model,mode,bid_price_uact_per_block,reachable
 2026-09-03T07:07:19.813682+00:00,1788419240139,gpu,akash1uezxmc39c9uky9plqdvmnzp7yfwpyamjtq9g2w,pro6000se,coverage,3400.696426,True,38.1,3.55,,http://c7549gaeu59snaud72svpouem0.ingress.pro6000.hou.aes.akash.pub
 2026-09-03T12:47:22.890238+00:00,1788439643116,cpu-micro,akash1s3hq36mpas4nmkqasn7fgwhs9968cgl3u5esnw,,coverage,3.214866,False,,,never_reachable,http://79c463ocplebjefembqafbcbig.ingress.froggy-servers.com
 2026-09-03T17:48:34.334251+00:00,1788457714744,cpu-heavy,akash19tp6w64zvdvdh26pv5lyf4f40llnqthgfy0t48,,cheapest,46.0,False,,,never_reachable,http://2jtc09u8rt8n5enfu6b3brsi60.ingress.akash.metz.live
+2026-09-03T20:56:22.181773+00:00,1788468982766,gpu,akash17r6r9u364t49k7qdef52qtm6wm5mcn0lpzfgnv,h100,coverage,3402.347706,True,38.5,3.981,,http://7l1r35238ldf7be4kq93vbcr4o.ingress.h100.siamaidol.com
