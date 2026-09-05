@@ -19,3 +19,4 @@ ts,dseq,profile,provider_owner,gpu_model,mode,bid_price_uact_per_block,reachable
 2026-09-05T10:29:07.215089+00:00,1788604147461,cpu-heavy,akash1k94uya5rhrtj9rfw850az9aq2d6vdpjmtnlgd0,,coverage,70.921986,True,36.2,4.903,,http://rbgfpt461tbmd58a5lbocdpfhg.ingress.boogle.cloud
 2026-09-05T15:05:53.849509+00:00,1788620753962,gpu,akash12v6dhc8awlwhv438jjyw80eguhgtm735mfv3fx,a100,coverage,3063.415746,True,37.8,4.087,,http://45hv0lu3up8t7e0ngobc6tba2s.ingress.a100.dsm.val.akash.pub
 2026-09-05T18:11:39.810333+00:00,1788631900106,cpu-micro,akash15tl6v6gd0nte0syyxnv57zmmspgju4c3xfmdhk,,cheapest,2.954114,False,,,never_reachable,http://85679e106le1v4bchfc4050lf8.ingress.hurricane.akash.pub
+2026-09-05T22:02:13.362921+00:00,1788645733548,cpu-heavy,akash1dudfnsqwfecytfqxwvnfc7eqc5ca429zfkhwyd,,coverage,50.568841,True,39.6,4.197,,http://rg925cspjdf6r71sp8okfpvr70.ingress.onenode.dev
